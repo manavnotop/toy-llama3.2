@@ -152,3 +152,30 @@ class GroupQueryAttention(nn.Module):
     context_vec = self.out_proj(context_vec)
 
     return context_vec
+
+class TransformerBlock(nn.Module):
+  def __init__(self, cfg):
+    super().__init__()
+    self.attn = GroupQueryAttention(
+      d_in = cfg["emb_dim"],
+      d_out = cfg["emb_dim"],
+      num_heads = cfg["n_heads"],
+      num_kv_groups = cfg["n_kv_groups"],
+      dtype= cfg["dtype"]
+    )
+    self.ff = FeedForward(cfg)
+    self.norm1 = RMSNorm(cfg["emb_dim"], eps=1e-6)
+    self.norm2 = RMSNorm(cfg["emb_dim"], eps=1e-6)
+
+  def forward(self, x, mask, cos, sin):
+    shortcut = x
+    x = self.norm1(x)
+    x = self.attn(x)
+    x = x + shortcut
+
+    shortcut = x 
+    x = self.norm2(x)
+    x = self.ff(x)
+    x = x + shortcut
+
+    return x
