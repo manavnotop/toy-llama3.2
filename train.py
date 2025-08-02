@@ -40,18 +40,25 @@ cfg_dtype = torch.float32 if device == "mps" else torch.bfloat16
 
 cfg = {
   "vocab_size": vocab_size,   #number of unique characters(tokens)
-  "emb_dim": 128,             #token embedding dimension
-  "n_heads": 4,               #total number of attention heads
+  "emb_dim": 256, #128             #token embedding dimension
+  "n_heads": 8, #8               #total number of attention heads
   "n_kv_groups": 2,           #group of kv heads
-  "n_layers": 4,              #number of transformer layers
-  "hidden_dim": 128,          #feedforward hidden dimension
-  "context_length": 128,      #max input sequence length
+  "n_layers": 6,              #number of transformer layers
+  "hidden_dim": 512,          #feedforward hidden dimension
+  "context_length": 256,      #max input sequence length
   "rope_base": 10000.0,       #rotary embedding base (for RoPE)
   "qk_norm": False,           #whether to use qk_normalisation
   "dtype": cfg_dtype,         #precision used in model (bfloat16 or float32)
   "head_dim": None,           #will be computed as emb_dim // n_heads
+  "freq_config": {
+    "original_context_length" : 256,
+    "low_freq_factor": 8,
+    "high_freq_factor": 1,
+    "factor": 4,
+  }
 }
 
+cfg["head_dim"] = cfg["emb_dim"] // cfg["n_heads"]
 model = Llama3(cfg).to(device)
 if device != "mps": 
   model = model.to(cfg["dtype"])
@@ -130,7 +137,7 @@ plt.legend()
 plt.grid(True)
 print("📉 Loss curve saved as 'loss_curve.png'")
 
-model_save_path = f"toy_qwen3_{epochs}epochs.pth"
+model_save_path = f"toy_llama3_{epochs}epochs.pth"
 torch.save(model.state_dict(), model_save_path)
 print(f"Model saved to '{model_save_path}'")
 

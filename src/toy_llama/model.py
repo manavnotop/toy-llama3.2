@@ -6,7 +6,7 @@ class Llama3(nn.Module):
   def __init__(self, cfg):
     super().__init__()
 
-    self.token_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"], dtype=cfg["cfg"])
+    self.token_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"], dtype=cfg["dtype"])
 
     self.trf_blocks = nn.ModuleList(
       TransformerBlock(cfg) for _ in range(cfg["n_layers"])
@@ -26,7 +26,7 @@ class Llama3(nn.Module):
     self.cfg = cfg 
 
   def forward(self, in_idx):
-    token_embs = token_embs(in_idx)
+    token_embs = self.token_emb(in_idx)
     x = token_embs
 
     num_tokens = x.shape[1]

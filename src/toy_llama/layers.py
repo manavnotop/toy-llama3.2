@@ -10,7 +10,6 @@ class FeedForward(nn.Module):
 
   def forward(self, x):
     x_fc1 = self.fc1(x)
-    x = nn.RMSNorm()
     x_fc2 = self.fc2(x)
     x = nn.functional.silu(x_fc1) * x_fc2
     return self.fc3(x)
@@ -119,32 +118,32 @@ class GroupQueryAttention(nn.Module):
     self.out_proj = nn.Linear(d_out, d_out, bias=False, dtype=dtype)
 
   def forward(self, x, mask, cos, sin):
-    b, num_tokens, d_in = x.shape()
+    b, num_tokens, d_in = x.shape
 
     queries = self.W_query(x)
     keys = self.W_key(x)
     values = self.W_value(x)
 
-    queries = queries.view(b, num_tokens, self.num_heads, self.head_dim)
-    keys = keys.view(b, num_tokens, self.num_kv_groups, self.head_dim)
-    values = values.view(b, num_tokens, self.num_kv_groups, self.head_dim)
+    queries = queries.view(b, num_tokens, self.num_heads, self.head_dims)
+    keys = keys.view(b, num_tokens, self.num_kv_groups, self.head_dims)
+    values = values.view(b, num_tokens, self.num_kv_groups, self.head_dims)
 
-    queries = queries.tranpose(1, 2) # -> (b, num_heads, num_tokens, head_dim)
+    queries = queries.transpose(1, 2) # -> (b, num_heads, num_tokens, head_dim)
     keys = keys.transpose(1, 2)      # -> (b, num_kv_groups, num_tokens, head_dim)
     values = values.transpose(1, 2)  # -> (b, num_kv_groups, num_tokens, head_dim)
 
     queries = apply_rope(queries, cos, sin)
-    values = apply_rope(values, cos, sin)
+    keys = apply_rope(keys, cos, sin)
 
     keys = keys.repeat_interleave(self.group_size, dim=1)
     values = values.repeat_interleave(self.group_size, dim=1)
 
-    attn_scores = queries @ values.transpose(2, 3)
+    attn_scores = queries @ keys.transpose(2, 3)
 
     attn_scores = attn_scores.masked_fill(mask, -torch.inf)
 
-    attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
-    assert keys.shape[-1] == self.head_dim
+    attn_weights = torch.softmax(attn_scores / self.head_dims**0.5, dim=-1)
+    assert keys.shape[-1] == self.head_dims
 
     context_vec = (attn_weights @ values).transpose(1, 2)
 
@@ -170,7 +169,7 @@ class TransformerBlock(nn.Module):
   def forward(self, x, mask, cos, sin):
     shortcut = x
     x = self.norm1(x)
-    x = self.attn(x)
+    x = self.attn(x, mask, cos, sin)
     x = x + shortcut
 
     shortcut = x 
