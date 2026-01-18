@@ -8,4 +8,5 @@ dependencies = [
     "matplotlib>=3.10.5",
     "torch>=2.7.1",
     "tqdm>=4.67.1",
+    "ruff>=0.8.0",
 ]
