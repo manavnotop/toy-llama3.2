@@ -105,7 +105,7 @@ for epoch in range(epochs):
 
     for step in progress_bar:
         # Sample random sequences using advanced indexing
-        ix = torch.randint(len(data) - seq_len - 1, (batch_size,))
+        ix = torch.randint(len(data) - seq_len - 1, (batch_size,), device=device)
         offsets = torch.arange(seq_len, device=device)
         xb = data[ix.unsqueeze(1) + offsets].view(batch_size, seq_len)
         yb = data[ix.unsqueeze(1) + 1 + offsets].view(batch_size, seq_len)

@@ -44,12 +44,12 @@ class Llama3(nn.Module):
 
         self.cfg = cfg
 
-    def _get_mask(self, num_tokens: int) -> torch.Tensor:
+    def _get_mask(self, num_tokens: int, device: torch.device) -> torch.Tensor:
         """Get or create cached causal mask."""
         if self._cached_mask is None or num_tokens > self._mask_context_len:
             self._cached_mask = torch.triu(
                 torch.ones(
-                    num_tokens, num_tokens, device=self.cfg.device, dtype=torch.bool
+                    num_tokens, num_tokens, device=device, dtype=torch.bool
                 ),
                 diagonal=1,
             )
@@ -61,7 +61,7 @@ class Llama3(nn.Module):
         x = token_embs
 
         num_tokens = x.shape[1]
-        mask = self._get_mask(num_tokens)
+        mask = self._get_mask(num_tokens, x.device)
 
         for block in self.trf_blocks:
             x = block(x, mask, self.cos, self.sin)
